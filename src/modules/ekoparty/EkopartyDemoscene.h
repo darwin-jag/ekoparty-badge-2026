@@ -30,11 +30,13 @@ enum class IdleAnimation : uint8_t {
     KERNEL_SKULL,
     CHAOS_GRIN,
     MESH_ARG,
-    JAG_MATRIX_CITY,
-    JAG_LOGO_GLITCH,
-    JAG_DATA_STREAM,
-    JAG_THREAT_HUNT,
+    JAG_RADAR,
+    JAG_FIREWALL,
+    JAG_PENTEST,
+    JAG_CONTAIN,
     JAG_FORENSICS,
+    JAG_LOGO,
+    JAG_SIEM,
     COUNT,
 };
 
