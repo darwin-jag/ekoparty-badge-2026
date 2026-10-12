@@ -4,6 +4,8 @@
 
 #if HAS_SCREEN
 #include "EkopartyLogo.h"
+#include "JagAnimations.h"
+#include <string.h>
 #include "OLEDDisplay.h"
 #include "graphics/ScreenFonts.h"
 #include <stdio.h>
@@ -165,6 +167,42 @@ void drawLogoBands(OLEDDisplay *display, int16_t x, int16_t y, uint32_t localMs,
             drawGlitchOverlay(display, x, y, frame, 1);
         }
     }
+}
+
+void drawJagAnimation(OLEDDisplay *display, int16_t x, int16_t y, uint8_t animation, uint16_t frame)
+{
+    static uint8_t buffer[jag::frameBytes];
+    static int16_t decodedAnimation = -1;
+    static int16_t decodedFrame = -1;
+
+    if (animation >= jag::animationCount) {
+        return;
+    }
+    const int16_t target = static_cast<int16_t>(frame % jag::framesPerAnimation);
+    if (decodedAnimation != animation || target < decodedFrame) {
+        memset(buffer, 0, sizeof(buffer));
+        decodedAnimation = animation;
+        decodedFrame = -1;
+    }
+    while (decodedFrame < target) {
+        decodedFrame++;
+        const uint16_t index = static_cast<uint16_t>(animation) * jag::framesPerAnimation + decodedFrame;
+        uint32_t in = jag::frameOffsets[index];
+        const uint32_t end = jag::frameOffsets[index + 1];
+        uint16_t out = 0;
+        while (in < end && out < jag::frameBytes) {
+            const uint8_t control = jag::frameData[in++];
+            const uint16_t count = (control & 0x7FU) + 1U;
+            if (control & 0x80U) {
+                out += count; // bytes sin cambios
+            } else {
+                for (uint16_t i = 0; i < count && in < end && out < jag::frameBytes; i++) {
+                    buffer[out++] ^= jag::frameData[in++];
+                }
+            }
+        }
+    }
+    display->drawXbm(x, y, 128, 64, buffer);
 }
 
 void drawSignalAcquire(OLEDDisplay *display, int16_t x, int16_t y, const Timeline &timeline)
@@ -601,6 +639,15 @@ void drawIdleAnimation(OLEDDisplay *display, int16_t x, int16_t y, IdleAnimation
     }
     case IdleAnimation::MESH_ARG:
         drawMeshArg(display, x, y, elapsedMs, visualFrame);
+        break;
+    case IdleAnimation::JAG_MATRIX_CITY:
+    case IdleAnimation::JAG_LOGO_GLITCH:
+    case IdleAnimation::JAG_DATA_STREAM:
+    case IdleAnimation::JAG_THREAT_HUNT:
+    case IdleAnimation::JAG_FORENSICS:
+        drawJagAnimation(display, x, y,
+                         static_cast<uint8_t>(animation) - static_cast<uint8_t>(IdleAnimation::JAG_MATRIX_CITY),
+                         visualFrame);
         break;
     case IdleAnimation::COUNT:
         drawEye(display, x, y, false);

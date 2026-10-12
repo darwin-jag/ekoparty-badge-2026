@@ -514,6 +514,27 @@ void EkopartyBadgeModule::showIdlePixels()
         }
         break;
     }
+    case ekoparty::IdleAnimation::JAG_MATRIX_CITY:
+    case ekoparty::IdleAnimation::JAG_LOGO_GLITCH:
+    case ekoparty::IdleAnimation::JAG_DATA_STREAM:
+    case ekoparty::IdleAnimation::JAG_THREAT_HUNT:
+    case ekoparty::IdleAnimation::JAG_FORENSICS: {
+        // Lluvia Matrix en los LEDs: verde con destellos aleatorios
+        const uint16_t frame = elapsedMs / frameIntervalMs;
+        const bool threat = idleAnimation == ekoparty::IdleAnimation::JAG_THREAT_HUNT;
+        for (uint16_t i = 0; i < NEOPIXEL_COUNT; i++) {
+            const uint8_t sample = ekoparty::signalByte(frame + i * 7U, 29U + i);
+            const uint8_t base = triangleWave(elapsedMs + i * 300U, 2400U, 20, 90);
+            if (threat && (frame % 12U) < 2U && i == 0) {
+                pixels.setPixelColor(i, pixels.Color(200, 0, 0));
+            } else if ((sample & 0x0FU) == 0U) {
+                pixels.setPixelColor(i, pixels.Color(120, 255, 140));
+            } else {
+                pixels.setPixelColor(i, pixels.Color(0, base, base / 6U));
+            }
+        }
+        break;
+    }
     case ekoparty::IdleAnimation::COUNT:
         break;
     }
@@ -730,7 +751,9 @@ void EkopartyBadgeModule::showBadgeMenu()
 
 void EkopartyBadgeModule::showIdleAnimationMenu()
 {
-    static const char *options[] = {"Volver", "Ojo", "Logo glitch", "Calavera", "Risa", "Mesh ARG"};
+    static const char *options[] = {"Volver",      "Ojo",         "Logo glitch", "Calavera",    "Risa",
+                                    "Mesh ARG",    "JAG Matrix",  "JAG Glitch",  "JAG Stream",  "JAG Threat",
+                                    "JAG Forense"};
     constexpr uint8_t optionCount = sizeof(options) / sizeof(options[0]);
     static_assert(optionCount == static_cast<uint8_t>(ekoparty::IdleAnimation::COUNT) + 1,
                   "Idle animation menu and enum must stay in sync");
