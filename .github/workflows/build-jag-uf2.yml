@@ -1,0 +1,36 @@
+name: Compilar UF2 JAG
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - src/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio con submodulos
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ hashFiles('platformio.ini', 'variants/nrf52840/diy/ekoparty_badge_v1/platformio.ini') }}
+      - name: Instalar PlatformIO
+        run: pip install platformio
+      - name: Compilar ekoparty_badge_v1
+        run: bash scripts/build-ekoparty.sh ekoparty_badge_v1
+      - name: Publicar UF2
+        uses: actions/upload-artifact@v4
+        with:
+          name: ekoparty_badge_v1-JAG-uf2
+          path: |
+            dist/ekoparty_badge_v1/latest-ekoparty_badge_v1.uf2
+            dist/ekoparty_badge_v1/BUILD_INFO.txt
